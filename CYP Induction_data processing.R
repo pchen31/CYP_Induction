@@ -10,7 +10,8 @@ Rawdata <- read_excel(Name_rawdata_file, sheet = "Raw QPCR CT data")
 # Cleanup raw data and subset datafrma for individual reporter gene 
 Val_replicate <- 3                                                                     # 3 for triplicate
 Val_pct_CV_cutoff <- 12                                                                # Cutoff value of %CV to remove outlier
-Name_PosCtrls <- c("Ome", "Pheb", "Rifa")                                              # Name of positive control for 1A2, 2B6 and 3A4
+Val_pct_PC_NR <- 2                                                                     # Cutoff value of %PC to set as "NR"
+Name_PosCtrls <- c("Ome", "Pheb", "Rifa")                                              # Name of positive control in sample name for 1A2, 2B6 and 3A4
 Rawdata <- Rawdata[ , c(4, 2, 5, 7, 9)]                                                # Cleanup to have only essential columns for further data processing.
 Rawdata <- drop_na(Rawdata, "Sample Name")                                             # Drop rows containing NA's in Sample Name column
 Rawdata$CT <- as.numeric(Rawdata$CT)                                                   # Convert CT from character into numeric
@@ -129,6 +130,12 @@ List_PosCtrl_final <- c("Positive Control", "PC", Val_PC_1A2_fold_change, Val_PC
 
 Summary_all <- rbind(Summary_all, List_PosCtrl_final)                                           
 Summary_all <- Summary_all[!(Summary_all$ID %in% Name_PosCtrls), ]                                            # Remove rows of individual positive control
+Summary_all[ ,3:8] <- lapply(Summary_all[ ,3:8], as.numeric)
+Summary_all_2 <- Summary_all                                                                                  # Duplicate summary for export
+
+Summary_all$`%PC_1A2`[Summary_all$`%PC_1A2` < Val_pct_PC_NR] <- "NR"  
+Summary_all$`%PC_2B6`[Summary_all$`%PC_2B6` < Val_pct_PC_NR] <- "NR" 
+Summary_all$`%PC_3A4`[Summary_all$`%PC_3A4` < Val_pct_PC_NR] <- "NR" 
 
 # Export
 Val_current_date <- Sys.Date()                                                                                # Get the current date to attach to the file name
@@ -139,7 +146,9 @@ write_xlsx(List_Summary,                                                        
 
 List_processed_data <- list("1A2 Processed data" = Df_1A2, 
                             "2B6 Processed data" = Df_2B6, 
-                            "3A4 Processed data" = Df_3A4)
+                            "3A4 Processed data" = Df_3A4,
+                            "Summary_no NR" = Summary_all_2,
+                            "Summary_final" = Summary_all)
 write_xlsx(List_processed_data,                                                                               # Export processed data to an excel file
            paste(Val_current_date, " CYP Induction_Processed data", ".xlsx", sep = ""))  
 
